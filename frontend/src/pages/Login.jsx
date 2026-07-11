@@ -15,7 +15,6 @@ function Login() {
         if (!email || !password) {
 
             alert("Please enter email and password");
-
             return;
 
         }
@@ -27,29 +26,42 @@ function Login() {
                 password,
             });
 
-            // Save JWT Token
-            localStorage.setItem("token", response.data.token);
+            // Login Failed
+            if (!response.data.token) {
 
-            // Login Status
+                alert(response.data.message);
+                return;
+
+            }
+
+            // Save User Details
+            localStorage.setItem("token", response.data.token);
+            localStorage.setItem("email", response.data.email);
+            localStorage.setItem("role", response.data.role);
             localStorage.setItem("isLoggedIn", "true");
 
-            alert("Login Successful");
+            alert(response.data.message);
 
             navigate("/dashboard");
 
-        }catch (error) {
+        } catch (error) {
 
-    console.log(error);
+            console.log(error);
 
-    if (error.response) {
-        console.log("Status:", error.response.status);
-        console.log("Data:", error.response.data);
-        alert(JSON.stringify(error.response.data));
-    } else {
-        alert(error.message);
-    }
+            if (error.response) {
 
-}
+                console.log("Status:", error.response.status);
+                console.log("Data:", error.response.data);
+
+                alert("Login Failed");
+
+            } else {
+
+                alert(error.message);
+
+            }
+
+        }
 
     };
 

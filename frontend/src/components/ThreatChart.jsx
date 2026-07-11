@@ -2,85 +2,90 @@ import { useEffect, useState } from "react";
 import api from "../services/api";
 
 import {
-    BarChart,
-    Bar,
-    XAxis,
-    YAxis,
-    CartesianGrid,
-    Tooltip,
-    ResponsiveContainer,
-    Cell,
+  BarChart,
+  Bar,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  ResponsiveContainer,
+  Cell,
 } from "recharts";
 
 function ThreatChart() {
 
-    const [data, setData] = useState([]);
+  const [data, setData] = useState([]);
 
-    useEffect(() => {
-        fetchChart();
-    }, []);
+  useEffect(() => {
+    fetchChart();
+  }, []);
 
-    const fetchChart = async () => {
-        try {
+  const fetchChart = async () => {
 
-            const response = await api.get("/dashboard/chart");
+    try {
 
-            setData(response.data);
+      const response = await api.get("/dashboard/chart");
 
-        } catch (error) {
+      console.log(response.data);
 
-            console.log(error);
+      setData(response.data);
 
-        }
-    };
+    } catch (error) {
 
-    const colors = [
-        "#dc2626", // Critical - Red
-        "#ea580c", // High - Orange
-        "#eab308", // Medium - Yellow
-        "#16a34a", // Low - Green
-    ];
+      console.log(error);
 
-    return (
+    }
 
-        <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
+  };
 
-            <h2 className="text-2xl font-bold mb-6">
-                Threat Distribution
-            </h2>
+  const colors = [
+    "#dc2626",
+    "#ea580c",
+    "#eab308",
+    "#16a34a",
+  ];
 
-            <ResponsiveContainer width="100%" height={350}>
+  return (
 
-                <BarChart data={data}>
+    <div className="bg-white rounded-xl shadow-lg p-6 mt-8">
 
-                    <CartesianGrid strokeDasharray="3 3" />
+      <h2 className="text-2xl font-bold mb-6">
+        Threat Distribution
+      </h2>
 
-                    <XAxis dataKey="severity" />
+      <ResponsiveContainer width="100%" height={350}>
 
-                    <YAxis allowDecimals={false} />
+        <BarChart data={data}>
 
-                    <Tooltip />
+          <CartesianGrid strokeDasharray="3 3" />
 
-                    <Bar dataKey="count">
+          <XAxis dataKey="severity" />
 
-                        {data.map((entry, index) => (
+          <YAxis allowDecimals={false} />
 
-                            <Cell
-                                key={index}
-                                fill={colors[index]}
-                            />
+          <Tooltip />
 
-                        ))}
+          <Bar dataKey="count">
 
-                    </Bar>
+            {data.map((entry, index) => (
 
-                </BarChart>
+              <Cell
+                key={index}
+                fill={colors[index % colors.length]}
+              />
 
-            </ResponsiveContainer>
+            ))}
 
-        </div>
+          </Bar>
 
-    );
+        </BarChart>
+
+      </ResponsiveContainer>
+
+    </div>
+
+  );
+
 }
 
 export default ThreatChart;

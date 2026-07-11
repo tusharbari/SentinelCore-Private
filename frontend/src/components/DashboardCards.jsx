@@ -4,7 +4,7 @@ import api from "../services/api";
 import {
   FaBug,
   FaExclamationTriangle,
-  FaShieldAlt,
+  FaBell,
   FaCheckCircle,
 } from "react-icons/fa";
 
@@ -13,14 +13,13 @@ function DashboardCards() {
   const [stats, setStats] = useState({
     totalThreats: 0,
     criticalThreats: 0,
-    openThreats: 0,
-    resolvedThreats: 0,
+    totalAlerts: 0,
+    criticalAlerts: 0,
   });
 
   useEffect(() => {
     fetchStats();
 
-    // Auto refresh every 30 seconds
     const interval = setInterval(fetchStats, 30000);
 
     return () => clearInterval(interval);
@@ -28,10 +27,15 @@ function DashboardCards() {
 
   const fetchStats = async () => {
     try {
+
       const response = await api.get("/dashboard/stats");
+
       setStats(response.data);
+
     } catch (error) {
+
       console.log(error);
+
     }
   };
 
@@ -51,15 +55,15 @@ function DashboardCards() {
       bg: "bg-orange-100",
     },
     {
-      title: "Open Threats",
-      value: stats.openThreats,
-      icon: <FaShieldAlt />,
+      title: "Total Alerts",
+      value: stats.totalAlerts,
+      icon: <FaBell />,
       color: "text-blue-600",
       bg: "bg-blue-100",
     },
     {
-      title: "Resolved Threats",
-      value: stats.resolvedThreats,
+      title: "Critical Alerts",
+      value: stats.criticalAlerts,
       icon: <FaCheckCircle />,
       color: "text-green-600",
       bg: "bg-green-100",

@@ -1,5 +1,9 @@
 package backend.controller;
 
+import backend.entity.Threat;
+import backend.repository.AlertRepository;
+import backend.repository.ThreatRepository;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -12,32 +16,71 @@ import java.util.*;
 })
 public class DashboardController {
 
+    @Autowired
+    private ThreatRepository threatRepository;
+
+    @Autowired
+    private AlertRepository alertRepository;
+
+    // ================= Dashboard Cards =================
+
     @GetMapping("/stats")
     public Map<String, Object> getStats() {
 
         Map<String, Object> stats = new HashMap<>();
 
-        stats.put("threats", 125);
-        stats.put("alerts", 18);
-        stats.put("ioc", 432);
-        stats.put("risk", "82%");
+        // Threat Statistics
+        stats.put("totalThreats", threatRepository.count());
+        stats.put("criticalThreats", threatRepository.countBySeverity("Critical"));
+        stats.put("openThreats", threatRepository.countByStatus("Open"));
+        stats.put("resolvedThreats", threatRepository.countByStatus("Resolved"));
+
+        // Alert Statistics
+        stats.put("totalAlerts", alertRepository.count());
+        stats.put("criticalAlerts", alertRepository.countBySeverity("Critical"));
+        stats.put("openAlerts", alertRepository.countByStatus("Open"));
+        stats.put("resolvedAlerts", alertRepository.countByStatus("Resolved"));
 
         return stats;
     }
+
+    // ================= Threat Distribution =================
 
     @GetMapping("/chart")
     public List<Map<String, Object>> getChartData() {
 
         List<Map<String, Object>> chart = new ArrayList<>();
 
-        chart.add(Map.of("day", "Mon", "threats", 12));
-        chart.add(Map.of("day", "Tue", "threats", 18));
-        chart.add(Map.of("day", "Wed", "threats", 25));
-        chart.add(Map.of("day", "Thu", "threats", 30));
-        chart.add(Map.of("day", "Fri", "threats", 45));
-        chart.add(Map.of("day", "Sat", "threats", 38));
-        chart.add(Map.of("day", "Sun", "threats", 50));
+        chart.add(Map.of(
+                "severity", "Critical",
+                "count", threatRepository.countBySeverity("Critical")
+        ));
+
+        chart.add(Map.of(
+                "severity", "High",
+                "count", threatRepository.countBySeverity("High")
+        ));
+
+        chart.add(Map.of(
+                "severity", "Medium",
+                "count", threatRepository.countBySeverity("Medium")
+        ));
+
+        chart.add(Map.of(
+                "severity", "Low",
+                "count", threatRepository.countBySeverity("Low")
+        ));
 
         return chart;
     }
+
+    // ================= Recent Threats =================
+
+    @GetMapping("/recent-threats")
+    public List<Threat> getRecentThreats() {
+
+        return threatRepository.findTop5ByOrderByIdDesc();
+
+    }
+
 }

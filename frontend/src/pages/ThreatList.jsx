@@ -7,6 +7,7 @@ import Sidebar from "../components/Sidebar";
 function ThreatList() {
 
     const navigate = useNavigate();
+    const role = localStorage.getItem("role");
 
     const [threats, setThreats] = useState([]);
     const [search, setSearch] = useState("");
@@ -24,6 +25,91 @@ function ThreatList() {
             console.log(error);
         }
     };
+
+    // ================= Export PDF =================
+
+    const exportPdf = async () => {
+
+        try {
+
+            const response = await api.get(
+                "/reports/threats/pdf",
+                {
+                    responseType: "blob",
+                }
+            );
+
+            const url = window.URL.createObjectURL(
+                new Blob([response.data])
+            );
+
+            const link = document.createElement("a");
+
+            link.href = url;
+
+            link.setAttribute(
+                "download",
+                "SentinelCore_Threat_Report.pdf"
+            );
+
+            document.body.appendChild(link);
+
+            link.click();
+
+            link.remove();
+
+        } catch (error) {
+
+            console.log(error);
+
+            alert("Failed to Download PDF");
+
+        }
+
+    };
+     // ================= Export Excel =================
+
+        const exportExcel = async () => {
+
+            try {
+
+                const response = await api.get(
+                    "/reports/threats/excel",
+                    {
+                        responseType: "blob",
+                    }
+                );
+
+                const url = window.URL.createObjectURL(
+                    new Blob([response.data])
+                );
+
+                const link = document.createElement("a");
+
+                link.href = url;
+
+                link.setAttribute(
+                    "download",
+                    "SentinelCore_Threat_Report.xlsx"
+                );
+
+                document.body.appendChild(link);
+
+                link.click();
+
+                link.remove();
+
+            } catch (error) {
+
+                console.log(error);
+
+                alert("Failed to Download Excel");
+
+            }
+
+        };
+
+    // ================= Delete Threat =================
 
     const deleteThreat = async (id) => {
 
@@ -48,9 +134,11 @@ function ThreatList() {
             alert("Failed to Delete Threat");
 
         }
+
     };
 
-    // Severity Badge Colors
+    // ================= Severity Badge =================
+
     const getSeverityBadge = (severity) => {
 
         switch (severity) {
@@ -72,7 +160,8 @@ function ThreatList() {
         }
     };
 
-    // Status Badge Colors
+    // ================= Status Badge =================
+
     const getStatusBadge = (status) => {
 
         switch (status) {
@@ -91,7 +180,8 @@ function ThreatList() {
         }
     };
 
-    // Search + Filter
+    // ================= Search + Filter =================
+
     const filteredThreats = threats.filter((threat) => {
 
         const matchesSearch =
@@ -112,11 +202,38 @@ function ThreatList() {
 
             <main className="ml-64 mt-16 p-8 bg-slate-100 min-h-screen">
 
-                <h1 className="text-3xl font-bold mb-6">
-                    Threat Management
-                </h1>
+               <div className="flex justify-between items-center mb-6">
+
+                    <h1 className="text-3xl font-bold">
+                        Threat Management
+                    </h1>
+
+                   {role === "ADMIN" && (
+
+                    <div className="flex gap-3">
+
+                        <button
+                            onClick={exportPdf}
+                            className="bg-red-600 hover:bg-red-700 text-white px-5 py-3 rounded-lg"
+                        >
+                            📄 Export PDF
+                        </button>
+
+                        <button
+                            onClick={exportExcel}
+                            className="bg-green-600 hover:bg-green-700 text-white px-5 py-3 rounded-lg"
+                        >
+                            📊 Export Excel
+                        </button>
+
+                    </div>
+
+                )}
+
+                </div>
 
                 {/* Search + Filter */}
+
                 <div className="flex flex-col md:flex-row gap-4 mb-6">
 
                     <input
@@ -124,7 +241,7 @@ function ThreatList() {
                         placeholder="🔍 Search Threat..."
                         value={search}
                         onChange={(e) => setSearch(e.target.value)}
-                        className="w-full md:w-80 border rounded-lg px-4 py-2 focus:ring-2 focus:ring-blue-500"
+                        className="w-full md:w-80 border rounded-lg px-4 py-2"
                     />
 
                     <select
@@ -154,7 +271,9 @@ function ThreatList() {
                                 <th className="p-4">Severity</th>
                                 <th className="p-4">Source</th>
                                 <th className="p-4">Status</th>
-                                <th className="p-4">Actions</th>
+                                            {role === "ADMIN" && (
+                                            <th className="p-4">Actions</th>
+                                        )}
 
                             </tr>
 
@@ -179,53 +298,47 @@ function ThreatList() {
 
                                         <td className="p-4">
 
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${getSeverityBadge(
-                                                    threat.severity
-                                                )}`}
-                                            >
+                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getSeverityBadge(threat.severity)}`}>
                                                 {threat.severity}
                                             </span>
 
                                         </td>
 
-                                        <td className="p-4">
-                                            {threat.source}
-                                        </td>
+                                        <td className="p-4">{threat.source}</td>
 
                                         <td className="p-4">
 
-                                            <span
-                                                className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadge(
-                                                    threat.status
-                                                )}`}
-                                            >
+                                            <span className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadge(threat.status)}`}>
                                                 {threat.status}
                                             </span>
 
                                         </td>
 
-                                        <td className="p-4">
+                                       {role === "ADMIN" && (
 
-                                            <button
-                                                onClick={() =>
-                                                    navigate(`/edit-threat/${threat.id}`)
-                                                }
-                                                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2"
-                                            >
-                                                Edit
-                                            </button>
+                                            <td className="p-4">
 
-                                            <button
-                                                onClick={() =>
-                                                    deleteThreat(threat.id)
-                                                }
-                                                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
-                                            >
-                                                Delete
-                                            </button>
+                                                <button
+                                                    onClick={() =>
+                                                        navigate(`/edit-threat/${threat.id}`)
+                                                    }
+                                                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded mr-2"
+                                                >
+                                                    Edit
+                                                </button>
 
-                                        </td>
+                                                <button
+                                                    onClick={() =>
+                                                        deleteThreat(threat.id)
+                                                    }
+                                                    className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded"
+                                                >
+                                                    Delete
+                                                </button>
+
+                                            </td>
+
+                                            )}
 
                                     </tr>
 
@@ -236,7 +349,7 @@ function ThreatList() {
                                 <tr>
 
                                     <td
-                                        colSpan="6"
+                                        colSpan={role === "ADMIN" ? 6 : 5}
                                         className="text-center p-6 text-gray-500"
                                     >
                                         No Threats Found

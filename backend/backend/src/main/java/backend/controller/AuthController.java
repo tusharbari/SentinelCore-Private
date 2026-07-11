@@ -1,5 +1,6 @@
 package backend.controller;
 
+import backend.dto.JwtResponse;
 import backend.dto.LoginRequest;
 import backend.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +18,12 @@ public class AuthController {
     private AuthService authService;
 
     @PostMapping("/login")
-    public String login(@RequestBody LoginRequest request) {
+    public JwtResponse login(@RequestBody LoginRequest request) {
 
         return authService.login(
                 request.getEmail(),
                 request.getPassword()
         );
+
     }
 }
