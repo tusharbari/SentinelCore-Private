@@ -35,198 +35,225 @@ public class PlaybookService {
         @PostConstruct
         @Transactional
         public void seedDefaultPlaybooks() {
-                // Seed sample incidents if empty
-                if (incidentRepository.count() == 0) {
-                        log.info("Seeding sample security incidents...");
-                        Incident incident1 = Incident.builder()
-                                        .title("Brute Force Detection on Main Portal")
-                                        .description("Detected 15 failed authentication attempts for user 'admin' within 2 minutes from IP 192.168.1.105.")
-                                        .severity("High")
-                                        .status("Open")
-                                        .source("Auth Service")
+                // Seed sample incidents idempotently
+                seedIncident("Brute Force Detection on Main Portal",
+                                "Detected 15 failed authentication attempts for user 'admin' within 2 minutes from IP 192.168.1.105.",
+                                "High", "Open", "Auth Service");
+
+                seedIncident("Malware Suspect on WS-908",
+                                "Unrecognized hash executed in temporary folder. Target: C:\\Users\\Public\\Temp\\backdoor.exe.",
+                                "Critical", "Investigating", "EDR Agent");
+
+                seedIncident("Privilege Escalation on Domain Controller",
+                                "Unusual privilege elevation detected for user 'service_account_temp' on domain controller.",
+                                "Critical", "Open", "Active Directory");
+
+                seedIncident("Vulnerability Scan Required for Web Server Subnet",
+                                "Scheduled scan failed to complete due to timeout. Manual intervention or re-triggering required.",
+                                "Medium", "Open", "Vulnerability Scanner");
+
+                // Seed playbooks & steps idempotently
+                seedBruteForcePlaybook();
+                seedMalwarePlaybook();
+                seedPrivEscPlaybook();
+                seedVulnScanPlaybook();
+
+                log.info("Playbook and incident seeding completed successfully.");
+        }
+
+        private void seedIncident(String title, String description, String severity, String status, String source) {
+                if (incidentRepository.findByTitle(title).isEmpty()) {
+                        log.info("Seeding incident: {}", title);
+                        Incident incident = Incident.builder()
+                                        .title(title)
+                                        .description(description)
+                                        .severity(severity)
+                                        .status(status)
+                                        .source(source)
+                                        .build();
+                        incidentRepository.save(incident);
+                }
+        }
+
+        private void seedBruteForcePlaybook() {
+                if (playbookRepository.findByName("Brute Force Response").isEmpty()) {
+                        log.info("Seeding Brute Force Response playbook...");
+                        Playbook bruteForce = Playbook.builder()
+                                        .name("Brute Force Response")
+                                        .description("Triggered when multiple failed login attempts are detected. Automatically blocks malicious IP and locks targeted user account.")
+                                        .triggerType("ALERT_TYPE")
+                                        .triggerValue("Brute Force")
+                                        .conditionsJson("{\"failedAttemptsThreshold\":5}")
+                                        .isActive(true)
                                         .build();
 
-                        Incident incident2 = Incident.builder()
-                                        .title("Malware Suspect on WS-908")
-                                        .description("Unrecognized hash executed in temporary folder. Target: C:\\Users\\Public\\Temp\\backdoor.exe.")
-                                        .severity("Critical")
-                                        .status("Investigating")
-                                        .source("EDR Agent")
+                        bruteForce = playbookRepository.save(bruteForce);
+
+                        PlaybookStep bfStep1 = PlaybookStep.builder()
+                                        .playbook(bruteForce)
+                                        .stepOrder(1)
+                                        .name("Block Attacking Source IP")
+                                        .actionType("BLOCK_IP")
+                                        .parametersJson("{\"firewallRule\":\"Deny\",\"durationMinutes\":1440}")
                                         .build();
 
-                        incidentRepository.saveAll(List.of(incident1, incident2));
+                        PlaybookStep bfStep2 = PlaybookStep.builder()
+                                        .playbook(bruteForce)
+                                        .stepOrder(2)
+                                        .name("Temporarily Lock Compromised Account")
+                                        .actionType("DISABLE_USER")
+                                        .parametersJson("{\"lockDurationMinutes\":60}")
+                                        .build();
+
+                        PlaybookStep bfStep3 = PlaybookStep.builder()
+                                        .playbook(bruteForce)
+                                        .stepOrder(3)
+                                        .name("Send SOC Alert Notification")
+                                        .actionType("SEND_NOTIFICATION")
+                                        .parametersJson("{\"channel\":\"SLACK\",\"recipient\":\"#soc-alerts\",\"severity\":\"Critical\"}")
+                                        .build();
+
+                        PlaybookStep bfStep4 = PlaybookStep.builder()
+                                        .playbook(bruteForce)
+                                        .stepOrder(4)
+                                        .name("Create Incident Ticket")
+                                        .actionType("CREATE_INCIDENT")
+                                        .parametersJson("{\"title\":\"Brute Force Attack Contained\",\"severity\":\"High\"}")
+                                        .build();
+
+                        playbookStepRepository.saveAll(List.of(bfStep1, bfStep2, bfStep3, bfStep4));
                 }
+        }
 
-                if (playbookRepository.count() > 0) {
-                        return;
+        private void seedMalwarePlaybook() {
+                if (playbookRepository.findByName("Malware Containment").isEmpty()) {
+                        log.info("Seeding Malware Containment playbook...");
+                        Playbook malware = Playbook.builder()
+                                        .name("Malware Containment")
+                                        .description("Isolates infected host systems from the internal network and disables suspicious user active sessions.")
+                                        .triggerType("ALERT_SEVERITY")
+                                        .triggerValue("Critical")
+                                        .conditionsJson("{\"alertName\":\"Malware Detected\"}")
+                                        .isActive(true)
+                                        .build();
+
+                        malware = playbookRepository.save(malware);
+
+                        PlaybookStep mwStep1 = PlaybookStep.builder()
+                                        .playbook(malware)
+                                        .stepOrder(1)
+                                        .name("Quarantine Host Network Access")
+                                        .actionType("ISOLATE_HOST")
+                                        .parametersJson("{\"networkInterface\":\"eth0\",\"vlanId\":666}")
+                                        .build();
+
+                        PlaybookStep mwStep2 = PlaybookStep.builder()
+                                        .playbook(malware)
+                                        .stepOrder(2)
+                                        .name("Disable User Active Sessions")
+                                        .actionType("DISABLE_USER")
+                                        .parametersJson("{\"revokeTokens\":true}")
+                                        .build();
+
+                        PlaybookStep mwStep3 = PlaybookStep.builder()
+                                        .playbook(malware)
+                                        .stepOrder(3)
+                                        .name("Notify Incident Response Team")
+                                        .actionType("SEND_NOTIFICATION")
+                                        .parametersJson("{\"channel\":\"EMAIL\",\"recipient\":\"incident-response@sentinelcore.com\"}")
+                                        .build();
+
+                        PlaybookStep mwStep4 = PlaybookStep.builder()
+                                        .playbook(malware)
+                                        .stepOrder(4)
+                                        .name("Create Forensic Incident Ticket")
+                                        .actionType("CREATE_INCIDENT")
+                                        .parametersJson("{\"title\":\"Infected Host Contained\",\"severity\":\"Critical\"}")
+                                        .build();
+
+                        playbookStepRepository.saveAll(List.of(mwStep1, mwStep2, mwStep3, mwStep4));
                 }
+        }
 
-                log.info("Seeding default security playbooks...");
+        private void seedPrivEscPlaybook() {
+                if (playbookRepository.findByName("Privilege Escalation Detection").isEmpty()) {
+                        log.info("Seeding Privilege Escalation Detection playbook...");
+                        Playbook privEsc = Playbook.builder()
+                                        .name("Privilege Escalation Detection")
+                                        .description("Fires when an unauthorized permission elevation is caught. Deactivates credentials immediately.")
+                                        .triggerType("THREAT_DETECTED")
+                                        .triggerValue("Privilege Escalation")
+                                        .isActive(true)
+                                        .build();
 
-                // 1. Brute Force Response Playbook
-                Playbook bruteForce = Playbook.builder()
-                                .name("Brute Force Response")
-                                .description("Triggered when multiple failed login attempts are detected. Automatically blocks malicious IP and locks targeted user account.")
-                                .triggerType("ALERT_TYPE")
-                                .triggerValue("Brute Force")
-                                .conditionsJson("{\"failedAttemptsThreshold\":5}")
-                                .isActive(true)
-                                .build();
+                        privEsc = playbookRepository.save(privEsc);
 
-                bruteForce = playbookRepository.save(bruteForce);
+                        PlaybookStep peStep1 = PlaybookStep.builder()
+                                        .playbook(privEsc)
+                                        .stepOrder(1)
+                                        .name("Disable Account & Revoke Roles")
+                                        .actionType("DISABLE_USER")
+                                        .parametersJson("{\"immediateDeactivation\":true}")
+                                        .build();
 
-                PlaybookStep bfStep1 = PlaybookStep.builder()
-                                .playbook(bruteForce)
-                                .stepOrder(1)
-                                .name("Block Attacking Source IP")
-                                .actionType("BLOCK_IP")
-                                .parametersJson("{\"firewallRule\":\"Deny\",\"durationMinutes\":1440}")
-                                .build();
+                        PlaybookStep peStep2 = PlaybookStep.builder()
+                                        .playbook(privEsc)
+                                        .stepOrder(2)
+                                        .name("Trigger High Priority Notification")
+                                        .actionType("SEND_NOTIFICATION")
+                                        .parametersJson("{\"channel\":\"IN_APP\",\"recipient\":\"ADMIN\"}")
+                                        .build();
 
-                PlaybookStep bfStep2 = PlaybookStep.builder()
-                                .playbook(bruteForce)
-                                .stepOrder(2)
-                                .name("Temporarily Lock Compromised Account")
-                                .actionType("DISABLE_USER")
-                                .parametersJson("{\"lockDurationMinutes\":60}")
-                                .build();
+                        PlaybookStep peStep3 = PlaybookStep.builder()
+                                        .playbook(privEsc)
+                                        .stepOrder(3)
+                                        .name("File Privilege Abuse Incident")
+                                        .actionType("CREATE_INCIDENT")
+                                        .parametersJson("{\"title\":\"Unauthorized Privilege Elevation Detected\",\"severity\":\"Critical\"}")
+                                        .build();
 
-                PlaybookStep bfStep3 = PlaybookStep.builder()
-                                .playbook(bruteForce)
-                                .stepOrder(3)
-                                .name("Send SOC Alert Notification")
-                                .actionType("SEND_NOTIFICATION")
-                                .parametersJson("{\"channel\":\"SLACK\",\"recipient\":\"#soc-alerts\",\"severity\":\"Critical\"}")
-                                .build();
+                        playbookStepRepository.saveAll(List.of(peStep1, peStep2, peStep3));
+                }
+        }
 
-                PlaybookStep bfStep4 = PlaybookStep.builder()
-                                .playbook(bruteForce)
-                                .stepOrder(4)
-                                .name("Create Incident Ticket")
-                                .actionType("CREATE_INCIDENT")
-                                .parametersJson("{\"title\":\"Brute Force Attack Contained\",\"severity\":\"High\"}")
-                                .build();
+        private void seedVulnScanPlaybook() {
+                if (playbookRepository.findByName("Vulnerability Scan Automation").isEmpty()) {
+                        log.info("Seeding Vulnerability Scan Automation playbook...");
+                        Playbook vulnScan = Playbook.builder()
+                                        .name("Vulnerability Scan Automation")
+                                        .description("Triggers a dynamic vulnerability scan on the network subnet and generates remediation tickets.")
+                                        .triggerType("MANUAL")
+                                        .isActive(true)
+                                        .build();
 
-                playbookStepRepository.saveAll(List.of(bfStep1, bfStep2, bfStep3, bfStep4));
+                        vulnScan = playbookRepository.save(vulnScan);
 
-                // 2. Malware Containment Playbook
-                Playbook malware = Playbook.builder()
-                                .name("Malware Containment")
-                                .description("Isolates infected host systems from the internal network and disables suspicious user active sessions.")
-                                .triggerType("ALERT_SEVERITY")
-                                .triggerValue("Critical")
-                                .conditionsJson("{\"alertName\":\"Malware Detected\"}")
-                                .isActive(true)
-                                .build();
+                        PlaybookStep vsStep1 = PlaybookStep.builder()
+                                        .playbook(vulnScan)
+                                        .stepOrder(1)
+                                        .name("Trigger Subnet Vulnerability Scan")
+                                        .actionType("SCAN_VULNERABILITY")
+                                        .parametersJson("{\"targetSubnet\":\"10.0.1.0/24\",\"scanProfile\":\"Full Discovery\"}")
+                                        .build();
 
-                malware = playbookRepository.save(malware);
+                        PlaybookStep vsStep2 = PlaybookStep.builder()
+                                        .playbook(vulnScan)
+                                        .stepOrder(2)
+                                        .name("Send Scan Summary Report")
+                                        .actionType("SEND_NOTIFICATION")
+                                        .parametersJson("{\"channel\":\"EMAIL\",\"recipient\":\"admin@sentinelcore.com\"}")
+                                        .build();
 
-                PlaybookStep mwStep1 = PlaybookStep.builder()
-                                .playbook(malware)
-                                .stepOrder(1)
-                                .name("Quarantine Host Network Access")
-                                .actionType("ISOLATE_HOST")
-                                .parametersJson("{\"networkInterface\":\"eth0\",\"vlanId\":666}")
-                                .build();
+                        PlaybookStep vsStep3 = PlaybookStep.builder()
+                                        .playbook(vulnScan)
+                                        .stepOrder(3)
+                                        .name("Create Remediation Tickets")
+                                        .actionType("CREATE_INCIDENT")
+                                        .parametersJson("{\"title\":\"Vulnerability Scan Remediation Tasks\",\"severity\":\"Medium\"}")
+                                        .build();
 
-                PlaybookStep mwStep2 = PlaybookStep.builder()
-                                .playbook(malware)
-                                .stepOrder(2)
-                                .name("Disable User Active Sessions")
-                                .actionType("DISABLE_USER")
-                                .parametersJson("{\"revokeTokens\":true}")
-                                .build();
-
-                PlaybookStep mwStep3 = PlaybookStep.builder()
-                                .playbook(malware)
-                                .stepOrder(3)
-                                .name("Notify Incident Response Team")
-                                .actionType("SEND_NOTIFICATION")
-                                .parametersJson("{\"channel\":\"EMAIL\",\"recipient\":\"incident-response@sentinelcore.com\"}")
-                                .build();
-
-                PlaybookStep mwStep4 = PlaybookStep.builder()
-                                .playbook(malware)
-                                .stepOrder(4)
-                                .name("Create Forensic Incident Ticket")
-                                .actionType("CREATE_INCIDENT")
-                                .parametersJson("{\"title\":\"Infected Host Contained\",\"severity\":\"Critical\"}")
-                                .build();
-
-                playbookStepRepository.saveAll(List.of(mwStep1, mwStep2, mwStep3, mwStep4));
-
-                // 3. Privilege Escalation Detection Playbook
-                Playbook privEsc = Playbook.builder()
-                                .name("Privilege Escalation Detection")
-                                .description("Fires when an unauthorized permission elevation is caught. Deactivates credentials immediately.")
-                                .triggerType("THREAT_DETECTED")
-                                .triggerValue("Privilege Escalation")
-                                .isActive(true)
-                                .build();
-
-                privEsc = playbookRepository.save(privEsc);
-
-                PlaybookStep peStep1 = PlaybookStep.builder()
-                                .playbook(privEsc)
-                                .stepOrder(1)
-                                .name("Disable Account & Revoke Roles")
-                                .actionType("DISABLE_USER")
-                                .parametersJson("{\"immediateDeactivation\":true}")
-                                .build();
-
-                PlaybookStep peStep2 = PlaybookStep.builder()
-                                .playbook(privEsc)
-                                .stepOrder(2)
-                                .name("Trigger High Priority Notification")
-                                .actionType("SEND_NOTIFICATION")
-                                .parametersJson("{\"channel\":\"IN_APP\",\"recipient\":\"ADMIN\"}")
-                                .build();
-
-                PlaybookStep peStep3 = PlaybookStep.builder()
-                                .playbook(privEsc)
-                                .stepOrder(3)
-                                .name("File Privilege Abuse Incident")
-                                .actionType("CREATE_INCIDENT")
-                                .parametersJson("{\"title\":\"Unauthorized Privilege Elevation Detected\",\"severity\":\"Critical\"}")
-                                .build();
-
-                playbookStepRepository.saveAll(List.of(peStep1, peStep2, peStep3));
-
-                // 4. Vulnerability Scan Automation Playbook
-                Playbook vulnScan = Playbook.builder()
-                                .name("Vulnerability Scan Automation")
-                                .description("Triggers a dynamic vulnerability scan on the network subnet and generates remediation tickets.")
-                                .triggerType("MANUAL")
-                                .isActive(true)
-                                .build();
-
-                vulnScan = playbookRepository.save(vulnScan);
-
-                PlaybookStep vsStep1 = PlaybookStep.builder()
-                                .playbook(vulnScan)
-                                .stepOrder(1)
-                                .name("Trigger Subnet Vulnerability Scan")
-                                .actionType("SCAN_VULNERABILITY")
-                                .parametersJson("{\"targetSubnet\":\"10.0.1.0/24\",\"scanProfile\":\"Full Discovery\"}")
-                                .build();
-
-                PlaybookStep vsStep2 = PlaybookStep.builder()
-                                .playbook(vulnScan)
-                                .stepOrder(2)
-                                .name("Send Scan Summary Report")
-                                .actionType("SEND_NOTIFICATION")
-                                .parametersJson("{\"channel\":\"EMAIL\",\"recipient\":\"admin@sentinelcore.com\"}")
-                                .build();
-
-                PlaybookStep vsStep3 = PlaybookStep.builder()
-                                .playbook(vulnScan)
-                                .stepOrder(3)
-                                .name("Create Remediation Tickets")
-                                .actionType("CREATE_INCIDENT")
-                                .parametersJson("{\"title\":\"Vulnerability Scan Remediation Tasks\",\"severity\":\"Medium\"}")
-                                .build();
-
-                playbookStepRepository.saveAll(List.of(vsStep1, vsStep2, vsStep3));
+                        playbookStepRepository.saveAll(List.of(vsStep1, vsStep2, vsStep3));
+                }
 
                 log.info("Playbook seeding completed successfully.");
         }
