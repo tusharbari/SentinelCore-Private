@@ -358,6 +358,14 @@ public class PlaybookService {
                 Incident incident = null;
                 if (incidentId != null) {
                         incident = incidentRepository.findById(incidentId).orElse(null);
+                        if (incident != null) {
+                                if ("Resolved".equalsIgnoreCase(incident.getStatus()) || "Closed".equalsIgnoreCase(incident.getStatus())) {
+                                        throw new RuntimeException("Cannot run playbook on a resolved or closed incident");
+                                }
+                                if (!isPlaybookRelevant(playbook, incident)) {
+                                        throw new RuntimeException("This playbook is not relevant to this incident. Please select the relevant playbook.");
+                                }
+                        }
                 }
 
                 PlaybookExecution execution = PlaybookExecution.builder()
@@ -390,16 +398,26 @@ public class PlaybookService {
                         try {
                                 // Fetch execution in this thread context
                                 PlaybookExecution execution = playbookExecutionRepository.findById(executionId)
-                                                .orElseThrow(() -> new RuntimeException(
+                                .orElseThrow(() -> new RuntimeException(
                                                                 "Execution not found: " + executionId));
 
                                 List<PlaybookStep> steps = execution.getPlaybook().getSteps();
+
+                                Incident targetIncident = null;
+                                if (execution.getIncidentId() != null) {
+                                        targetIncident = incidentRepository.findById(execution.getIncidentId()).orElse(null);
+                                }
+                                boolean isSecondary = false;
+                                if (targetIncident != null) {
+                                        String relation = getPlaybookRelation(execution.getPlaybook(), targetIncident);
+                                        isSecondary = "SECONDARY".equalsIgnoreCase(relation);
+                                }
 
                                 // If playbook has no steps, finish immediately
                                 if (steps.isEmpty()) {
                                         execution.setStatus("SUCCESS");
                                         execution.setCurrentStep("No steps defined");
-                                        execution.setProgress(100);
+                                        execution.setProgress(isSecondary ? 70 : 100);
                                         execution.setEndedAt(LocalDateTime.now());
                                         playbookExecutionRepository.save(execution);
                                         writeExecutionLog(execution, "System", "SUCCESS", "INFO",
@@ -411,24 +429,22 @@ public class PlaybookService {
                                 playbookExecutionRepository.save(execution);
 
                                 // Transition incident status to Investigating
-                                if (execution.getIncidentId() != null) {
-                                        Incident incident = incidentRepository.findById(execution.getIncidentId()).orElse(null);
-                                        if (incident != null && "Open".equals(incident.getStatus())) {
-                                                incident.setStatus("Investigating");
-                                                incidentRepository.save(incident);
-                                                writeExecutionLog(execution, "System", "RUNNING", "INFO", 
-                                                                "Associated incident status transitioned to 'Investigating'.");
-                                        }
+                                if (targetIncident != null && "Open".equals(targetIncident.getStatus())) {
+                                        targetIncident.setStatus("Investigating");
+                                        incidentRepository.save(targetIncident);
+                                        writeExecutionLog(execution, "System", "RUNNING", "INFO", 
+                                                        "Associated incident status transitioned to 'Investigating'.");
                                 }
 
                                 writeExecutionLog(execution, "System", "RUNNING", "INFO",
                                                 "Starting playbook execution sequence...");
 
+                                int maxProgress = isSecondary ? 70 : 100;
                                 for (int i = 0; i < steps.size(); i++) {
                                         PlaybookStep step = steps.get(i);
                                         execution.setCurrentStep(step.getName());
                                         execution.setCurrentStepIndex(i + 1);
-                                        int currentProgress = (int) (((double) (i + 1) / steps.size()) * 100);
+                                        int currentProgress = (int) (((double) (i + 1) / steps.size()) * maxProgress);
                                         execution.setProgress(currentProgress);
                                         playbookExecutionRepository.save(execution);
 
@@ -446,20 +462,27 @@ public class PlaybookService {
                                 }
 
                                 execution.setStatus("SUCCESS");
-                                execution.setProgress(100);
+                                execution.setProgress(isSecondary ? 70 : 100);
                                 execution.setCurrentStep("Execution Completed");
                                 execution.setEndedAt(LocalDateTime.now());
                                 playbookExecutionRepository.save(execution);
 
-                                // Transition incident status to Resolved on completion
-                                if (execution.getIncidentId() != null) {
-                                        Incident incident = incidentRepository.findById(execution.getIncidentId()).orElse(null);
-                                        if (incident != null) {
-                                                incident.setStatus("Resolved");
-                                                incident.setDescription(incident.getDescription() +
+                                // Transition incident status to Resolved or Investigating (Partially Resolved) on completion
+                                if (targetIncident != null) {
+                                        if (isSecondary) {
+                                                targetIncident.setStatus("Investigating");
+                                                targetIncident.setDescription(targetIncident.getDescription() +
+                                                                "\n\n[Playbook Automation] This incident has been partially resolved (70%) by successful execution of secondary playbook: " +
+                                                                execution.getPlaybookName() + " (Execution #" + execution.getId() + ").");
+                                                incidentRepository.save(targetIncident);
+                                                writeExecutionLog(execution, "System", "SUCCESS", "INFO",
+                                                                "Associated incident status updated to '''Investigating''' (Partially Resolved) automatically.");
+                                        } else {
+                                                targetIncident.setStatus("Resolved");
+                                                targetIncident.setDescription(targetIncident.getDescription() +
                                                                 "\n\n[Playbook Automation] This incident has been automatically resolved by successful execution of playbook: " +
                                                                 execution.getPlaybookName() + " (Execution #" + execution.getId() + ").");
-                                                incidentRepository.save(incident);
+                                                incidentRepository.save(targetIncident);
                                                 writeExecutionLog(execution, "System", "SUCCESS", "INFO",
                                                                 "Associated incident status updated to '''Resolved''' automatically.");
                                         }
@@ -696,5 +719,140 @@ public class PlaybookService {
                                 exec.getStatus(),
                                 exec.getCurrentStep(),
                                 exec.getProgress());
+        }
+
+        private int getEditDistance(String a, String b) {
+                if (a.length() == 0) return b.length();
+                if (b.length() == 0) return a.length();
+                int[][] matrix = new int[b.length() + 1][a.length() + 1];
+                for (int i = 0; i <= b.length(); i++) matrix[i][0] = i;
+                for (int j = 0; j <= a.length(); j++) matrix[0][j] = j;
+                for (int i = 1; i <= b.length(); i++) {
+                        for (int j = 1; j <= a.length(); j++) {
+                                if (b.charAt(i - 1) == a.charAt(j - 1)) {
+                                        matrix[i][j] = matrix[i - 1][j - 1];
+                                } else {
+                                        matrix[i][j] = Math.min(
+                                                matrix[i - 1][j - 1] + 1,
+                                                Math.min(matrix[i][j - 1] + 1, matrix[i - 1][j] + 1)
+                                        );
+                                }
+                        }
+                }
+                return matrix[b.length()][a.length()];
+        }
+
+        private boolean wordsMatchFuzzy(String w1, String w2) {
+                if (w1.equals(w2)) return true;
+                if (w1.startsWith(w2) || w2.startsWith(w1)) return true;
+                int len1 = w1.length();
+                int len2 = w2.length();
+                int dist = getEditDistance(w1, w2);
+                if (len1 >= 7 && len2 >= 7 && dist <= 2) return true;
+                if (len1 >= 5 && len2 >= 5 && dist <= 1) return true;
+                return false;
+        }
+
+        private java.util.List<String> getCleanWords(String text, java.util.Set<String> stopWords) {
+                if (text == null || text.isBlank()) {
+                        return java.util.List.of();
+                }
+                return java.util.Arrays.stream(text.toLowerCase().split("[\\s_\\-]+"))
+                        .map(word -> word.replaceAll("[^a-z0-9]", ""))
+                        .filter(word -> word.length() > 2 && !stopWords.contains(word))
+                        .collect(Collectors.toList());
+        }
+
+        private boolean isPlaybookRelevant(Playbook playbook, Incident incident) {
+                if (playbook == null || incident == null) {
+                        return false;
+                }
+
+                // 1. MANUAL trigger type is always relevant
+                if ("MANUAL".equalsIgnoreCase(playbook.getTriggerType())) {
+                        return true;
+                }
+
+                // 2. Severity match
+                if ("ALERT_SEVERITY".equalsIgnoreCase(playbook.getTriggerType()) &&
+                                playbook.getTriggerValue() != null &&
+                                playbook.getTriggerValue().equalsIgnoreCase(incident.getSeverity())) {
+                        return true;
+                }
+
+                // 3. Trigger value substring match in title/description
+                if (playbook.getTriggerValue() != null) {
+                        String triggerValLower = playbook.getTriggerValue().toLowerCase();
+                        if ((incident.getTitle() != null && incident.getTitle().toLowerCase().contains(triggerValLower)) ||
+                                        (incident.getDescription() != null && incident.getDescription().toLowerCase().contains(triggerValLower))) {
+                                return true;
+                        }
+                }
+
+                // 4. Dynamic name keyword match with fuzzy matching
+                java.util.Set<String> stopWords = java.util.Set.of(
+                                "response", "playbook", "mitigation", "containment", 
+                                "detection", "automation", "remediation", "and", 
+                                "or", "the", "on", "for", "action", "plan", 
+                                "incident", "suspect"
+                );
+                
+                java.util.List<String> pbKeywords = getCleanWords(playbook.getName(), stopWords);
+                java.util.List<String> incWords = new java.util.ArrayList<>();
+                incWords.addAll(getCleanWords(incident.getTitle(), stopWords));
+                incWords.addAll(getCleanWords(incident.getDescription(), stopWords));
+
+                for (String w1 : pbKeywords) {
+                        for (String w2 : incWords) {
+                                if (wordsMatchFuzzy(w1, w2)) {
+                                        return true;
+                                }
+                        }
+                }
+
+                return false;
+        }
+
+        private String getPlaybookRelation(Playbook playbook, Incident incident) {
+                if (playbook == null || incident == null) return "NONE";
+
+                String pbName = playbook.getName() != null ? playbook.getName().toLowerCase() : "";
+
+                java.util.Set<String> stopWords = java.util.Set.of(
+                                "response", "playbook", "mitigation", "containment", 
+                                "detection", "automation", "remediation", "and", 
+                                "or", "the", "on", "for", "action", "plan", 
+                                "incident", "suspect"
+                );
+                
+                java.util.List<String> incWords = new java.util.ArrayList<>();
+                incWords.addAll(getCleanWords(incident.getTitle(), stopWords));
+                incWords.addAll(getCleanWords(incident.getDescription(), stopWords));
+
+                boolean isVulnIncident = incWords.stream().anyMatch(w -> wordsMatchFuzzy("vulnerability", w)) 
+                                || incWords.stream().anyMatch(w -> wordsMatchFuzzy("scan", w));
+                boolean isMalwareIncident = incWords.stream().anyMatch(w -> wordsMatchFuzzy("malware", w));
+                boolean isBruteForceIncident = incWords.stream().anyMatch(w -> wordsMatchFuzzy("brute", w));
+                boolean isPrivEscIncident = incWords.stream().anyMatch(w -> wordsMatchFuzzy("privilege", w));
+
+                boolean isVulnPlaybook = pbName.contains("vulnerability") || pbName.contains("scan");
+                boolean isMalwarePlaybook = pbName.contains("malware");
+                boolean isBruteForcePlaybook = pbName.contains("brute");
+                boolean isPrivEscPlaybook = pbName.contains("privilege");
+
+                // Recommended matching
+                if (isMalwareIncident && isMalwarePlaybook) return "RECOMMENDED";
+                if (isBruteForceIncident && isBruteForcePlaybook) return "RECOMMENDED";
+                if (isPrivEscIncident && isPrivEscPlaybook) return "RECOMMENDED";
+                if (isVulnIncident && isVulnPlaybook && !isMalwareIncident && !isBruteForceIncident && !isPrivEscIncident) {
+                        return "RECOMMENDED";
+                }
+
+                // Secondary matching (Vulnerability scan is secondary for Malware, Brute Force, and Privilege Escalation)
+                if (isVulnPlaybook && (isMalwareIncident || isBruteForceIncident || isPrivEscIncident)) {
+                        return "SECONDARY";
+                }
+
+                return "NONE";
         }
 }
