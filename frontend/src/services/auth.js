@@ -1,5 +1,5 @@
 export function getCurrentRole() {
-  const token = sessionStorage.getItem("token");
+  const token = localStorage.getItem("token");
   let role;
 
   try {
@@ -10,7 +10,7 @@ export function getCurrentRole() {
     role = null;
   }
 
-  const normalizedRole = String(role || sessionStorage.getItem("role") || "")
+  const normalizedRole = String(role || localStorage.getItem("role") || "")
     .replace(/^ROLE_/, "")
     .trim()
     .toUpperCase();
