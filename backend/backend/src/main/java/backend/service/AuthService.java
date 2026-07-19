@@ -38,7 +38,7 @@ public class AuthService {
             throw new RuntimeException("Invalid Password");
         }
 
-        String role = normalizeRole(user.getRole().getName());
+        String role = user.getRole().getName();
 
         String token = jwtUtil.generateToken(
                 user.getEmail(),
@@ -78,9 +78,5 @@ public class AuthService {
         userRepository.save(user);
 
         return "Registration Successful";
-    }
-
-    private String normalizeRole(String role) {
-        return "USER".equalsIgnoreCase(role) ? "VIEWER" : role;
     }
 }

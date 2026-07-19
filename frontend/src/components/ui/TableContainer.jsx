@@ -2,7 +2,7 @@ import GlassCard from "./GlassCard";
 
 function TableContainer({ children }) {
   return (
-    <GlassCard className="overflow-hidden">
+    <GlassCard className="overflow-x-auto">
       {children}
     </GlassCard>
   );

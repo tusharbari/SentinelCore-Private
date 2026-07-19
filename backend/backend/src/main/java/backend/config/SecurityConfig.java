@@ -47,10 +47,6 @@ public class SecurityConfig {
                         // Public APIs
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // WebSocket
-                        .requestMatchers("/ws/**").permitAll()
-                        .requestMatchers("/ws").permitAll()
-
                         // User Management
                         .requestMatchers("/api/users/**").hasRole("ADMIN")
 
@@ -107,16 +103,6 @@ public class SecurityConfig {
                         // Allow Preflight
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
-
-                        // Notification APIs
-                        .requestMatchers(HttpMethod.GET, "/api/notifications/**")
-                        .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
-
-                        .requestMatchers(HttpMethod.PUT, "/api/notifications/**")
-                        .hasAnyRole("ADMIN", "ANALYST")
-
-                        .requestMatchers(HttpMethod.DELETE, "/api/notifications/**")
-                        .hasRole("ADMIN")
 
                         .anyRequest()
                         .authenticated()

@@ -1,73 +1,212 @@
-
-import EditAlertRule from "../pages/EditAlertRule";
-import AddAlertRule from "../pages/AddAlertRule";
-import TestAlertEngine from "../pages/TestAlertEngine";
-import AlertRuleList from "../pages/AlertRuleList";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
+
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+
 import Dashboard from "../pages/Dashboard";
+
 import ThreatList from "../pages/ThreatList";
 import AddThreat from "../pages/AddThreat";
 import EditThreat from "../pages/EditThreat";
+
 import IOCList from "../pages/IOCList";
 import AddIOC from "../pages/AddIOC";
 import EditIOC from "../pages/EditIOC";
+
 import AlertList from "../pages/AlertList";
 import AddAlert from "../pages/AddAlert";
 import EditAlert from "../pages/EditAlert";
+
+import AlertRuleList from "../pages/AlertRuleList";
+import AddAlertRule from "../pages/AddAlertRule";
+import EditAlertRule from "../pages/EditAlertRule";
+import TestAlertEngine from "../pages/TestAlertEngine";
+
 import UserList from "../pages/UserList";
 import AddUser from "../pages/AddUser";
 import EditUser from "../pages/EditUser";
+
 import Reports from "../pages/Reports";
+
+import VulnerabilityDashboard from "../pages/VulnerabilityDashboard";
+
+import IncidentList from "../pages/IncidentList";
+
+import PlaybookList from "../pages/PlaybookList";
+import PlaybookExecutionDetail from "../pages/PlaybookExecutionDetail";
+
+import AuditLogs from "../pages/AuditLogs";
+
 import ProtectedRoute from "./ProtectedRoute";
 
 const writeRoles = ["ADMIN", "ANALYST"];
 const adminRoles = ["ADMIN"];
 
 const protect = (element, allowedRoles) => (
-  <ProtectedRoute allowedRoles={allowedRoles}>{element}</ProtectedRoute>
+    <ProtectedRoute allowedRoles={allowedRoles}>
+        {element}
+    </ProtectedRoute>
 );
 
 function AppRoutes() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/dashboard" element={protect(<Dashboard />)} />
-        <Route path="/threat-list" element={protect(<ThreatList />)} />
-        <Route path="/add-threat" element={protect(<AddThreat />, writeRoles)} />
-        <Route path="/edit-threat/:id" element={protect(<EditThreat />, writeRoles)} />
-        <Route path="/ioc-list" element={protect(<IOCList />)} />
-        <Route path="/add-ioc" element={protect(<AddIOC />, writeRoles)} />
-        <Route path="/edit-ioc/:id" element={protect(<EditIOC />, writeRoles)} />
-        <Route path="/alert-list" element={protect(<AlertList />)} />
-        <Route path="/add-alert" element={protect(<AddAlert />, writeRoles)} />
-        <Route path="/edit-alert/:id" element={protect(<EditAlert />, writeRoles)} />
-        <Route
-            path="/alert-rules"
-            element={protect(<AlertRuleList />, writeRoles)}
-        />
-        <Route
-          path="/add-alert-rule"
-          element={protect(<AddAlertRule />, writeRoles)}
-      />
-      <Route
-          path="/edit-alert-rule/:id"
-          element={protect(<EditAlertRule />, writeRoles)}
-      />
-        <Route path="/users" element={protect(<UserList />, adminRoles)} />
-        <Route path="/add-user" element={protect(<AddUser />, adminRoles)} />
-        <Route path="/edit-user/:id" element={protect(<EditUser />, adminRoles)} />
-        <Route path="/reports" element={protect(<Reports />)} />
-        <Route
-            path="/test-alert-engine"
-            element={protect(<TestAlertEngine />, writeRoles)}
-        />
-      </Routes>
-    </BrowserRouter>
-  );
+
+    return (
+
+        <BrowserRouter>
+
+            <Routes>
+
+                {/* Authentication */}
+
+                <Route path="/" element={<Login />} />
+                <Route path="/register" element={<Register />} />
+
+                {/* Dashboard */}
+
+                <Route
+                    path="/dashboard"
+                    element={protect(<Dashboard />)}
+                />
+
+                {/* Threats */}
+
+                <Route
+                    path="/threat-list"
+                    element={protect(<ThreatList />)}
+                />
+
+                <Route
+                    path="/add-threat"
+                    element={protect(<AddThreat />, writeRoles)}
+                />
+
+                <Route
+                    path="/edit-threat/:id"
+                    element={protect(<EditThreat />, writeRoles)}
+                />
+
+                {/* IOC */}
+
+                <Route
+                    path="/ioc-list"
+                    element={protect(<IOCList />)}
+                />
+
+                <Route
+                    path="/add-ioc"
+                    element={protect(<AddIOC />, writeRoles)}
+                />
+
+                <Route
+                    path="/edit-ioc/:id"
+                    element={protect(<EditIOC />, writeRoles)}
+                />
+
+                {/* Alerts */}
+
+                <Route
+                    path="/alert-list"
+                    element={protect(<AlertList />)}
+                />
+
+                <Route
+                    path="/add-alert"
+                    element={protect(<AddAlert />, writeRoles)}
+                />
+
+                <Route
+                    path="/edit-alert/:id"
+                    element={protect(<EditAlert />, writeRoles)}
+                />
+
+                {/* Alert Rules */}
+
+                <Route
+                    path="/alert-rules"
+                    element={protect(<AlertRuleList />, writeRoles)}
+                />
+
+                <Route
+                    path="/add-alert-rule"
+                    element={protect(<AddAlertRule />, writeRoles)}
+                />
+
+                <Route
+                    path="/edit-alert-rule/:id"
+                    element={protect(<EditAlertRule />, writeRoles)}
+                />
+
+                <Route
+                    path="/test-alert-engine"
+                    element={protect(<TestAlertEngine />, writeRoles)}
+                />
+
+                {/* Users */}
+
+                <Route
+                    path="/users"
+                    element={protect(<UserList />, adminRoles)}
+                />
+
+                <Route
+                    path="/add-user"
+                    element={protect(<AddUser />, adminRoles)}
+                />
+
+                <Route
+                    path="/edit-user/:id"
+                    element={protect(<EditUser />, adminRoles)}
+                />
+
+                {/* Vulnerability Scanner */}
+
+                <Route
+                    path="/vulnerabilities"
+                    element={protect(<VulnerabilityDashboard />)}
+                />
+
+                {/* Reports */}
+
+                <Route
+                    path="/reports"
+                    element={protect(<Reports />)}
+                />
+
+                {/* Incident Management */}
+
+                <Route
+                    path="/incidents"
+                    element={protect(<IncidentList />)}
+                />
+
+                {/* Playbook Automation */}
+
+                <Route
+                    path="/playbooks"
+                    element={protect(<PlaybookList />)}
+                />
+
+                <Route
+                    path="/playbooks/executions/:id"
+                    element={protect(<PlaybookExecutionDetail />)}
+                />
+
+                {/* Audit Logs */}
+
+                <Route
+                    path="/audit-logs"
+                    element={protect(
+                        <AuditLogs />,
+                        ["ADMIN", "ANALYST"]
+                    )}
+                />
+
+            </Routes>
+
+        </BrowserRouter>
+
+    );
+
 }
 
 export default AppRoutes;

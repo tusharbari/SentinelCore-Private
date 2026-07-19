@@ -2,7 +2,6 @@ import { useState, useRef, useEffect } from "react";
 import { FaBell, FaUserCircle, FaSignOutAlt } from "react-icons/fa";
 import { useNavigate } from "react-router-dom";
 
-import { getCurrentRole } from "../services/auth";
 import { useNotifications } from "../context/NotificationContext";
 import NotificationDropdown from "./NotificationDropdown";
 
@@ -10,8 +9,8 @@ function Navbar() {
 
     const navigate = useNavigate();
 
-    const email = sessionStorage.getItem("email");
-    const role = getCurrentRole();
+    const email = localStorage.getItem("email");
+    const role = localStorage.getItem("role");
 
     const { unreadCount } = useNotifications();
 
@@ -46,10 +45,10 @@ function Navbar() {
 
     const logout = () => {
 
-        sessionStorage.removeItem("token");
-        sessionStorage.removeItem("email");
-        sessionStorage.removeItem("role");
-        sessionStorage.removeItem("isLoggedIn");
+        localStorage.removeItem("token");
+        localStorage.removeItem("email");
+        localStorage.removeItem("role");
+        localStorage.removeItem("isLoggedIn");
 
         navigate("/");
 
