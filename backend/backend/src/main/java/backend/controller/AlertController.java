@@ -48,4 +48,16 @@ public class AlertController {
     public void deleteAlert(@PathVariable Long id) {
         alertService.deleteAlert(id);
     }
+
+    @PutMapping("/{id}/status")
+    public Alert updateStatus(@PathVariable Long id,
+                              @RequestParam String status) {
+
+        return alertService.updateStatus(id, status);
+    }
+
+    @GetMapping("/whoami")
+    public Object whoAmI(org.springframework.security.core.Authentication authentication) {
+        return authentication.getAuthorities();
+    }
 }

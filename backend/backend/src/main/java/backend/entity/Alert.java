@@ -1,6 +1,7 @@
 package backend.entity;
 
 import jakarta.persistence.*;
+import java.time.LocalDateTime;
 
 @Entity
 @Table(name = "alerts")
@@ -21,17 +22,29 @@ public class Alert {
     @Column(length = 1000)
     private String description;
 
+    @Column(name = "occurrence_count")
+    private Integer occurrenceCount = 1;
+
+    @Column(name = "last_occurred")
+    private LocalDateTime lastOccurred;
+
     public Alert() {
     }
 
     public Alert(Long id, String title, String severity,
-                 String source, String status, String description) {
+                 String source, String status,
+                 String description,
+                 Integer occurrenceCount,
+                 LocalDateTime lastOccurred) {
+
         this.id = id;
         this.title = title;
         this.severity = severity;
         this.source = source;
         this.status = status;
         this.description = description;
+        this.occurrenceCount = occurrenceCount;
+        this.lastOccurred = lastOccurred;
     }
 
     public Long getId() {
@@ -80,5 +93,21 @@ public class Alert {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public Integer getOccurrenceCount() {
+        return occurrenceCount;
+    }
+
+    public void setOccurrenceCount(Integer occurrenceCount) {
+        this.occurrenceCount = occurrenceCount;
+    }
+
+    public LocalDateTime getLastOccurred() {
+        return lastOccurred;
+    }
+
+    public void setLastOccurred(LocalDateTime lastOccurred) {
+        this.lastOccurred = lastOccurred;
     }
 }

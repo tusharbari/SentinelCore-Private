@@ -64,6 +64,24 @@ function Sidebar() {
       path: "/alert-list",
     },
     {
+      title: "Add Alert Rule",
+      icon: <FaPlusCircle />,
+      path: "/add-alert-rule",
+      roles: ["ADMIN", "ANALYST"],
+    },
+        {
+      title: "Alert Rules",
+      icon: <FaCog />,
+      path: "/alert-rules",
+      roles: ["ADMIN", "ANALYST"],
+    },
+    {
+      title: "Test Alert Engine",
+      icon: <FaCog />,
+      path: "/test-alert-engine",
+      roles: ["ADMIN", "ANALYST"],
+    },
+    {
       title: "Users",
       icon: <FaUsers />,
       path: "/users",

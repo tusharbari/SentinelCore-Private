@@ -51,4 +51,14 @@ public class AlertService {
     public void deleteAlert(Long id) {
         alertRepository.deleteById(id);
     }
+
+    public Alert updateStatus(Long id, String status) {
+
+        Alert alert = alertRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Alert not found"));
+
+        alert.setStatus(status);
+
+        return alertRepository.save(alert);
+    }
 }

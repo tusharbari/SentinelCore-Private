@@ -1,3 +1,8 @@
+
+import EditAlertRule from "../pages/EditAlertRule";
+import AddAlertRule from "../pages/AddAlertRule";
+import TestAlertEngine from "../pages/TestAlertEngine";
+import AlertRuleList from "../pages/AlertRuleList";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import Login from "../pages/Login";
 import Register from "../pages/Register";
@@ -40,10 +45,26 @@ function AppRoutes() {
         <Route path="/alert-list" element={protect(<AlertList />)} />
         <Route path="/add-alert" element={protect(<AddAlert />, writeRoles)} />
         <Route path="/edit-alert/:id" element={protect(<EditAlert />, writeRoles)} />
+        <Route
+            path="/alert-rules"
+            element={protect(<AlertRuleList />, writeRoles)}
+        />
+        <Route
+          path="/add-alert-rule"
+          element={protect(<AddAlertRule />, writeRoles)}
+      />
+      <Route
+          path="/edit-alert-rule/:id"
+          element={protect(<EditAlertRule />, writeRoles)}
+      />
         <Route path="/users" element={protect(<UserList />, adminRoles)} />
         <Route path="/add-user" element={protect(<AddUser />, adminRoles)} />
         <Route path="/edit-user/:id" element={protect(<EditUser />, adminRoles)} />
         <Route path="/reports" element={protect(<Reports />)} />
+        <Route
+            path="/test-alert-engine"
+            element={protect(<TestAlertEngine />, writeRoles)}
+        />
       </Routes>
     </BrowserRouter>
   );

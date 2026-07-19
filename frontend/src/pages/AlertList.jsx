@@ -69,6 +69,23 @@ function AlertList() {
 
     };
 
+    const changeStatus = async (id, status) => {
+
+    try {
+
+        await api.put(`/alerts/${id}/status?status=${status}`);
+
+        fetchAlerts();
+
+    } catch (error) {
+
+        console.log(error);
+
+        alert("Failed to update status");
+
+    }
+};
+
     const filteredAlerts = alerts.filter((alert) => {
 
         const matchesSearch =
@@ -108,23 +125,21 @@ function AlertList() {
 
     const getStatusBadge = (status) => {
 
-        switch (status) {
+    switch (status) {
 
-            case "Open":
-                return "bg-blue-500/20 text-blue-400";
+        case "Open":
+            return "bg-red-500/20 text-red-400";
 
-            case "Investigating":
-                return "bg-yellow-500/20 text-yellow-300";
+        case "Acknowledged":
+            return "bg-yellow-500/20 text-yellow-300";
 
-            case "Resolved":
-                return "bg-green-500/20 text-green-400";
+        case "Resolved":
+            return "bg-green-500/20 text-green-400";
 
-            default:
-                return "bg-slate-700 text-white";
-
-        }
-
-    };
+        default:
+            return "bg-slate-700 text-white";
+    }
+};
 
     return (<>
     <Navbar />
@@ -207,13 +222,15 @@ function AlertList() {
 
                         <tr>
 
-                            <th className="p-4">ID</th>
+                           <th className="p-4">ID</th>
                             <th className="p-4">Title</th>
                             <th className="p-4">Severity</th>
                             <th className="p-4">Source</th>
                             <th className="p-4">Status</th>
+                            <th className="p-4">Count</th>
+                            <th className="p-4">Last Occurred</th>
                             <th className="p-4">Description</th>
-                            {canEdit && <th className="p-4">Actions</th>}
+                            {canEdit && <th className="p-4 w-80">Actions</th>}
 
                         </tr>
 
@@ -277,64 +294,67 @@ function AlertList() {
 
                                     </td>
 
-                                    <td className="p-4">
-
+                                   <td className="p-4">
                                         <span
                                             className={`px-3 py-1 rounded-full text-sm font-semibold ${getStatusBadge(alert.status)}`}
                                         >
                                             {alert.status}
                                         </span>
+                                    </td>
 
+                                    <td className="p-4 font-semibold text-cyan-400">
+                                        {alert.occurrenceCount}
+                                    </td>
+
+                                    <td className="p-4 text-sm">
+                                        {alert.lastOccurred
+                                            ? new Date(alert.lastOccurred).toLocaleString()
+                                            : "-"}
                                     </td>
 
                                     <td className="p-4 max-w-xs truncate">
-
                                         {alert.description}
-
                                     </td>
 
-                                    {canEdit && <td className="p-4">
+                                    {canEdit && (
+                                        <td className="p-4 whitespace-nowrap">
 
-                                        <button
-                                            onClick={() =>
-                                                navigate(`/edit-alert/${alert.id}`)
-                                            }
-                                            className="
-                                                px-4
-                                                py-2
-                                                rounded-xl
-                                                bg-gradient-to-r
-                                                from-blue-600
-                                                to-cyan-500
-                                                text-white
-                                                mr-3
-                                                hover:scale-105
-                                                transition
-                                            "
-                                        >
-                                            Edit
-                                        </button>
+                                            {alert.status === "Open" && (
+                                                <button
+                                                    onClick={() => changeStatus(alert.id, "Acknowledged")}
+                                                    className="px-3 py-2 rounded-lg bg-yellow-600 hover:bg-yellow-700 text-white"
+                                                >
+                                                    Acknowledge
+                                                </button>
+                                            )}
 
-                                        {isAdmin && <button
-                                            onClick={() =>
-                                                deleteAlert(alert.id)
-                                            }
-                                            className="
-                                                px-4
-                                                py-2
-                                                rounded-xl
-                                                bg-gradient-to-r
-                                                from-red-600
-                                                to-red-500
-                                                text-white
-                                                hover:scale-105
-                                                transition
-                                            "
-                                        >
-                                            Delete
-                                        </button>}
+                                            {alert.status === "Acknowledged" && (
+                                                <button
+                                                    onClick={() => changeStatus(alert.id, "Resolved")}
+                                                    className="px-3 py-2 rounded-lg bg-green-600 hover:bg-green-700 text-white"
+                                                >
+                                                    Resolve
+                                                </button>
+                                            )}
 
-                                    </td>}
+                                            <button
+                                                onClick={() => navigate(`/edit-alert/${alert.id}`)}
+                                                className="px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white"
+                                            >
+                                                Edit
+                                            </button>
+
+                                            {isAdmin && (
+                                                <button
+                                                    onClick={() => deleteAlert(alert.id)}
+                                                    className="px-3 py-2 rounded-lg bg-red-600 hover:bg-red-700 text-white"
+                                                >
+                                                    Delete
+                                                </button>
+                                            )}
+
+                                        </td>
+                                        )}
 
                                 </motion.tr>
 
@@ -345,7 +365,7 @@ function AlertList() {
                             <tr>
 
                                 <td
-                                    colSpan={canEdit ? 7 : 6}
+                                    colSpan={canEdit ? 9 : 8}
                                     className="py-12 text-center text-slate-500"
                                 >
                                     No Alerts Found
