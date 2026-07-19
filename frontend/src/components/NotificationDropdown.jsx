@@ -79,35 +79,20 @@ function NotificationDropdown({ open }) {
                 shadow-2xl
                 overflow-hidden
                 z-50
-                origin-top-right
-                transition-all
-                duration-300
             "
         >
 
             {/* Header */}
 
-            <div
-                className="
-                    bg-gradient-to-r
-                    from-slate-900
-                    to-cyan-700
-                    text-white
-                    px-5
-                    py-4
-                "
-            >
+            <div className="bg-gradient-to-r from-slate-900 to-cyan-700 text-white px-5 py-4">
 
                 <div className="flex justify-between items-start">
 
                     <div>
 
                         <h2 className="font-bold text-lg flex items-center gap-2">
-
                             <FaBell />
-
                             Notifications
-
                         </h2>
 
                         <p className="text-sm text-slate-200 mt-1">
@@ -121,9 +106,7 @@ function NotificationDropdown({ open }) {
                         <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></span>
 
                         <span className="text-sm">
-
                             {unreadCount} New
-
                         </span>
 
                     </div>
@@ -132,14 +115,9 @@ function NotificationDropdown({ open }) {
 
             </div>
 
-            {/* Notifications */}
+            {/* Notification List */}
 
-            <div
-                className="
-                    max-h-[420px]
-                    overflow-y-auto
-                "
-            >
+            <div className="max-h-[420px] overflow-y-auto">
 
                 {
 
@@ -150,24 +128,15 @@ function NotificationDropdown({ open }) {
                             <div className="p-10 text-center">
 
                                 <FaBell
-                                    className="
-                                        text-5xl
-                                        mx-auto
-                                        text-slate-300
-                                        mb-4
-                                    "
+                                    className="text-5xl mx-auto text-slate-300 mb-4"
                                 />
 
                                 <h3 className="font-bold text-slate-700">
-
                                     You're all caught up!
-
                                 </h3>
 
                                 <p className="text-sm text-gray-500 mt-2">
-
                                     No security alerts available.
-
                                 </p>
 
                             </div>
@@ -179,7 +148,11 @@ function NotificationDropdown({ open }) {
                         notifications.map((notification) => (
 
                             <div
+
                                 key={notification.id}
+
+                                onClick={() => navigate("/alert-list")}
+
                                 className={`
                                     group
                                     p-4
@@ -189,12 +162,12 @@ function NotificationDropdown({ open }) {
                                     transition-all
                                     duration-200
                                     cursor-pointer
-
-                                    ${!notification.read
+                                    ${!notification.readStatus
                                         ? "bg-blue-50"
                                         : ""
                                     }
                                 `}
+
                             >
 
                                 <div className="flex justify-between">
@@ -203,12 +176,6 @@ function NotificationDropdown({ open }) {
 
                                         <div className="flex items-center gap-3">
 
-                                            <h3 className="font-semibold text-slate-800">
-
-                                                {notification.title}
-
-                                            </h3>
-
                                             <span
                                                 className={`
                                                     px-3
@@ -216,49 +183,50 @@ function NotificationDropdown({ open }) {
                                                     rounded-full
                                                     text-xs
                                                     font-bold
-
                                                     ${severityStyle(notification.severity)}
                                                 `}
                                             >
-
                                                 {notification.severity}
-
                                             </span>
 
                                         </div>
 
-                                        <p className="text-sm text-gray-600 mt-2">
+                                        <h3 className="font-semibold text-slate-800 mt-3">
+                                            {notification.title}
+                                        </h3>
 
+                                        <p className="text-sm text-gray-600 mt-2 break-words">
                                             {notification.message}
-
                                         </p>
 
-                                        <div
-                                            className="
-                                                flex
-                                                items-center
-                                                gap-2
-                                                text-xs
-                                                text-gray-400
-                                                mt-3
-                                            "
-                                        >
+                                        <div className="flex items-center gap-2 text-xs text-gray-400 mt-3">
 
                                             <FaClock />
 
-                                            {timeAgo(notification.receivedAt || notification.createdAt)}
+                                            {timeAgo(
+                                                notification.receivedAt ||
+                                                notification.createdAt
+                                            )}
 
                                         </div>
 
                                     </div>
 
                                     <FaArrowRight
+                                        onClick={(e) => {
+
+                                            e.stopPropagation();
+
+                                            navigate("/alert-list");
+
+                                        }}
                                         className="
                                             text-slate-400
                                             group-hover:text-cyan-600
                                             group-hover:translate-x-1
                                             transition-all
                                             mt-2
+                                            cursor-pointer
                                         "
                                     />
 
@@ -294,7 +262,6 @@ function NotificationDropdown({ open }) {
                                     py-2
                                     rounded-lg
                                     font-semibold
-                                    transition
                                 "
                             >
 
@@ -314,7 +281,6 @@ function NotificationDropdown({ open }) {
                                     py-2
                                     rounded-lg
                                     font-semibold
-                                    transition
                                 "
                             >
 
@@ -327,7 +293,9 @@ function NotificationDropdown({ open }) {
                         </div>
 
                         <button
-                            onClick={() => navigate("/alerts")}
+
+                            onClick={() => navigate("/alert-list")}
+
                             className="
                                 mt-3
                                 w-full
@@ -342,6 +310,7 @@ function NotificationDropdown({ open }) {
                                 items-center
                                 gap-2
                             "
+
                         >
 
                             View All Alerts

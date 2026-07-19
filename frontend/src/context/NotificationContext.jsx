@@ -1,3 +1,4 @@
+import axios from "axios";
 import { createContext, useContext, useEffect, useState } from "react";
 import { toast } from "react-toastify";
 import {
@@ -11,49 +12,133 @@ export const NotificationProvider = ({ children }) => {
 
     const [notifications, setNotifications] = useState([]);
 
+    // Load notifications from database
+    const loadNotifications = async () => {
+
+        try {
+
+            const token = localStorage.getItem("token");
+
+            const response = await axios.get(
+                "http://localhost:8080/api/notifications",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            setNotifications(response.data);
+
+        } catch (error) {
+
+            console.error("Error loading notifications:", error);
+
+        }
+
+    };
+
     useEffect(() => {
 
+        // Load existing notifications
+        loadNotifications();
+
+        // Connect WebSocket
         connectWebSocket((alert) => {
 
-            const notification = {
-                ...alert,
-                id: Date.now(),
-                read: false,
-                receivedAt: new Date()
-            };
-
-            setNotifications(prev => [
-                notification,
-                ...prev
-            ]);
-
             toast.success(
-                `🚨 ${alert.title}\nSeverity: ${alert.severity}`
+                <>
+                    <div className="font-bold text-base">
+                        🚨 {alert.title}
+                    </div>
+
+                    <div className="mt-1">
+                        <strong>Severity:</strong> {alert.severity}
+                    </div>
+
+                    <div className="mt-1">
+                        <strong>Status:</strong> {alert.status}
+                    </div>
+
+                    <div className="mt-2 text-sm">
+                        {alert.message}
+                    </div>
+                </>,
+                {
+                    position: "top-right",
+                    autoClose: 5000,
+                    hideProgressBar: false,
+                    closeOnClick: true,
+                    pauseOnHover: true,
+                    draggable: true,
+                    theme: "dark"
+                }
             );
+
+            // Refresh notifications
+            loadNotifications();
 
         });
 
-        return () => disconnectWebSocket();
+        return () => {
+
+            disconnectWebSocket();
+
+        };
 
     }, []);
 
     const unreadCount =
-        notifications.filter(n => !n.read).length;
+        notifications.filter(n => !n.readStatus).length;
 
-    const markAllRead = () => {
+    const markAllRead = async () => {
 
-        setNotifications(prev =>
-            prev.map(n => ({
-                ...n,
-                read: true
-            }))
-        );
+        try {
+
+            const token = localStorage.getItem("token");
+
+            await axios.put(
+                "http://localhost:8080/api/notifications/read-all",
+                {},
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            loadNotifications();
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
 
     };
 
-    const clearNotifications = () => {
+    const clearNotifications = async () => {
 
-        setNotifications([]);
+        try {
+
+            const token = localStorage.getItem("token");
+
+            await axios.delete(
+                "http://localhost:8080/api/notifications",
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`
+                    }
+                }
+            );
+
+            setNotifications([]);
+
+        } catch (error) {
+
+            console.error(error);
+
+        }
 
     };
 
@@ -64,7 +149,8 @@ export const NotificationProvider = ({ children }) => {
                 notifications,
                 unreadCount,
                 markAllRead,
-                clearNotifications
+                clearNotifications,
+                loadNotifications
             }}
         >
             {children}

@@ -99,11 +99,14 @@ public class AlertEngineService {
                 alert.setOccurrenceCount(alert.getOccurrenceCount() + 1);
                 alert.setLastOccurred(LocalDateTime.now());
 
-                alertRepository.save(alert);
+                Alert updatedAlert = alertRepository.save(alert);
+
+                // IMPORTANT: Send notification every time the alert is triggered
+                alertNotificationService.sendNotification(updatedAlert);
 
                 System.out.println("Existing Alert Updated!");
-                System.out.println("Alert ID : " + alert.getId());
-                System.out.println("Occurrence Count : " + alert.getOccurrenceCount());
+                System.out.println("Alert ID : " + updatedAlert.getId());
+                System.out.println("Occurrence Count : " + updatedAlert.getOccurrenceCount());
 
             } else {
 
@@ -120,7 +123,7 @@ public class AlertEngineService {
 
                 Alert savedAlert = alertRepository.save(alert);
 
-                // Broadcast notification to all connected clients
+                // Send notification for new alert
                 alertNotificationService.sendNotification(savedAlert);
 
                 System.out.println("New Alert Created!");

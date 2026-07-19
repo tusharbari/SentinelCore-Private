@@ -1,5 +1,5 @@
 package backend.config;
-import org.springframework.web.cors.CorsConfigurationSource;
+
 import backend.security.JwtAuthenticationFilter;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Bean;
@@ -12,19 +12,20 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfigurationSource;
 
 @Configuration
 public class SecurityConfig {
 
     @Autowired
     private JwtAuthenticationFilter jwtAuthenticationFilter;
+
     @Autowired
     private CorsConfigurationSource corsConfigurationSource;
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration)
-            throws Exception {
+            AuthenticationConfiguration configuration) throws Exception {
 
         return configuration.getAuthenticationManager();
 
@@ -35,75 +36,134 @@ public class SecurityConfig {
             throws Exception {
 
         http
+
                 .csrf(csrf -> csrf.disable())
 
                 .cors(Customizer.withDefaults())
 
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
 
                 .authorizeHttpRequests(auth -> auth
 
+                        // ===========================
                         // Public APIs
+                        // ===========================
                         .requestMatchers("/api/auth/**").permitAll()
 
-                        // User Management
-                        .requestMatchers("/api/users/**").hasRole("ADMIN")
+                        // ===========================
+                        // WebSocket
+                        // ===========================
+                        .requestMatchers("/ws/**").permitAll()
+                        .requestMatchers("/topic/**").permitAll()
+                        .requestMatchers("/app/**").permitAll()
 
+                        // ===========================
+                        // Users
+                        // ===========================
+                        .requestMatchers("/api/users/**")
+                        .hasRole("ADMIN")
+
+                        // ===========================
                         // Roles
-                        .requestMatchers("/api/roles/**").hasRole("ADMIN")
+                        // ===========================
+                        .requestMatchers("/api/roles/**")
+                        .hasRole("ADMIN")
 
+                        // ===========================
                         // Dashboard
+                        // ===========================
                         .requestMatchers("/api/dashboard/**")
                         .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
 
+                        // ===========================
                         // Threat APIs
-                        .requestMatchers(HttpMethod.GET, "/api/threats/**")
+                        // ===========================
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/threats/**")
                         .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
 
-                        .requestMatchers(HttpMethod.POST, "/api/threats/**")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/threats/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.PUT, "/api/threats/**")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/threats/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.DELETE, "/api/threats/**")
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/threats/**")
                         .hasRole("ADMIN")
 
+                        // ===========================
                         // IOC APIs
-                        .requestMatchers(HttpMethod.GET, "/api/ioc/**")
+                        // ===========================
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/ioc/**")
                         .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
 
-                        .requestMatchers(HttpMethod.POST, "/api/ioc/**")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/ioc/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.PUT, "/api/ioc/**")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/ioc/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.DELETE, "/api/ioc/**")
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/ioc/**")
                         .hasRole("ADMIN")
 
-                        // Alert APIs
-                        .requestMatchers(HttpMethod.GET, "/api/alerts/**")
+                        // ===========================
+                        // Alerts
+                        // ===========================
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/alerts/**")
                         .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
 
-                        .requestMatchers(HttpMethod.POST, "/api/alerts/**")
+                        .requestMatchers(HttpMethod.POST,
+                                "/api/alerts/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.PUT, "/api/alerts/**")
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/alerts/**")
                         .hasAnyRole("ADMIN", "ANALYST")
 
-                        .requestMatchers(HttpMethod.DELETE, "/api/alerts/**")
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/alerts/**")
                         .hasRole("ADMIN")
 
-                        // Report APIs
+                        // ===========================
+                        // Notifications
+                        // ===========================
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/notifications/**")
+                        .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
+
+                        .requestMatchers(HttpMethod.PUT,
+                                "/api/notifications/**")
+                        .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
+
+                        .requestMatchers(HttpMethod.DELETE,
+                                "/api/notifications/**")
+                        .hasRole("ADMIN")
+
+                        // ===========================
+                        // Reports
+                        // ===========================
                         .requestMatchers("/api/reports/**")
                         .hasAnyRole("ADMIN", "ANALYST", "VIEWER")
 
-                        // Allow Preflight
+                        // ===========================
+                        // Allow OPTIONS
+                        // ===========================
                         .requestMatchers(HttpMethod.OPTIONS, "/**")
                         .permitAll()
 
+                        // ===========================
+                        // Everything Else
+                        // ===========================
                         .anyRequest()
                         .authenticated()
 

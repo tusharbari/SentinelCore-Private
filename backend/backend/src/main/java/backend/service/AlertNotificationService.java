@@ -35,6 +35,7 @@ public class AlertNotificationService {
                 notification.getTitle(),
                 notification.getSeverity(),
                 alert.getStatus(),
+                notification.getMessage(),
                 notification.getCreatedAt()
         );
 

@@ -8,7 +8,8 @@ public class AlertNotification {
     private String title;
     private String severity;
     private String status;
-    private LocalDateTime time;
+    private String message;
+    private LocalDateTime createdAt;
 
     public AlertNotification() {
     }
@@ -17,13 +18,15 @@ public class AlertNotification {
                              String title,
                              String severity,
                              String status,
-                             LocalDateTime time) {
+                             String message,
+                             LocalDateTime createdAt) {
 
         this.id = id;
         this.title = title;
         this.severity = severity;
         this.status = status;
-        this.time = time;
+        this.message = message;
+        this.createdAt = createdAt;
     }
 
     public Long getId() {
@@ -58,11 +61,19 @@ public class AlertNotification {
         this.status = status;
     }
 
-    public LocalDateTime getTime() {
-        return time;
+    public String getMessage() {
+        return message;
     }
 
-    public void setTime(LocalDateTime time) {
-        this.time = time;
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
