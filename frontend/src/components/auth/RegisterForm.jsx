@@ -116,7 +116,7 @@ function RegisterForm({
                     Already have an account?
 
                     <Link
-                        to="/"
+                        to="/login"
                         className="text-sky-600 font-semibold ml-2 hover:underline"
                     >
                         Login

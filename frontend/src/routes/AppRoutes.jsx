@@ -2,6 +2,7 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 
 import Login from "../pages/Login";
 import Register from "../pages/Register";
+import LandingPage from "../pages/LandingPage";
 
 import Dashboard from "../pages/Dashboard";
 
@@ -59,7 +60,8 @@ function AppRoutes() {
 
                 {/* Authentication */}
 
-                <Route path="/" element={<Login />} />
+                <Route path="/" element={<LandingPage />} />
+                <Route path="/login" element={<Login />} />
                 <Route path="/register" element={<Register />} />
 
                 {/* Dashboard */}

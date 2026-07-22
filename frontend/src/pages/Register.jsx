@@ -40,7 +40,7 @@ function Register() {
 
             alert(response.data);
 
-            navigate("/");
+            navigate("/login");
 
         } catch (error) {
 
